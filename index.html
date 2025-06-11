@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spectrum CSS 架构实现</title>
+  <style>
+    /* ======= 设计令牌 ======= */
+    :root {
+      /* 颜色系统 */
+      --color-gray-50: #f8f8f8;
+      --color-gray-100: #eaeaea;
+      --color-gray-200: #d1d1d1;
+      --color-gray-300: #b1b1b1;
+      --color-gray-400: #909090;
+      --color-gray-500: #707070;
+      --color-gray-600: #505050;
+      --color-gray-700: #303030;
+      --color-gray-800: #202020;
+      --color-gray-900: #101010;
+
+      --color-blue-400: #2680eb;
+      --color-blue-500: #1473e6;
+      --color-blue-600: #0d66d0;
+      --color-red-400: #e34850;
+      --color-green-400: #2d9d78;
+
+      /* 间距系统 */
+      --spacing-unit: 4px;
+      --spacing-100: var(--spacing-unit);
+      --spacing-200: calc(var(--spacing-unit) * 2);
+      --spacing-300: calc(var(--spacing-unit) * 3);
+      --spacing-400: calc(var(--spacing-unit) * 4);
+      --spacing-500: calc(var(--spacing-unit) * 6);
+      --spacing-600: calc(var(--spacing-unit) * 8);
+
+      /* 排版系统 */
+      --font-family-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-family-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+
+      --font-size-100: 12px;
+      --font-size-200: 14px;
+      --font-size-300: 16px;
+      --font-size-400: 18px;
+      --font-size-500: 20px;
+      --font-size-600: 24px;
+
+      --font-weight-regular: 400;
+      --font-weight-medium: 500;
+      --font-weight-bold: 700;
+
+      --line-height-100: 1.2;
+      --line-height-200: 1.4;
+      --line-height-300: 1.6;
+
+      /* 边框系统 */
+      --border-radius-100: 2px;
+      --border-radius-200: 4px;
+      --border-radius-300: 8px;
+
+      --border-width-100: 1px;
+      --border-width-200: 2px;
+
+      /* 阴影系统 */
+      --shadow-100: 0 1px 3px rgba(0, 0, 0, 0.05);
+      --shadow-200: 0 2px 5px rgba(0, 0, 0, 0.08);
+      --shadow-300: 0 5px 15px rgba(0, 0, 0, 0.1);
+
+      /* 动效系统 */
+      --transition-duration-100: 0.15s;
+      --transition-duration-200: 0.3s;
+      --transition-duration-300: 0.5s;
+
+      --transition-easing-default: cubic-bezier(0.4, 0, 0.2, 1);
+
+      /* 响应式断点 */
+      --breakpoint-mobile: 480px;
+      --breakpoint-tablet: 768px;
+      --breakpoint-desktop: 1024px;
+    }
+
+    /* ======= 主题系统 ======= */
+    [data-theme="light"] {
+      /* 语义颜色 */
+      --color-background: var(--color-gray-50);
+      --color-surface: var(--color-gray-100);
+      --color-surface-elevated: #ffffff;
+      --color-text-primary: var(--color-gray-900);
+      --color-text-secondary: var(--color-gray-600);
+      --color-text-disabled: var(--color-gray-400);
+      --color-border: var(--color-gray-200);
+      --color-divider: var(--color-gray-100);
+
+      /* 交互颜色 */
+      --color-primary: var(--color-blue-500);
+      --color-primary-hover: var(--color-blue-600);
+      --color-primary-active: var(--color-blue-400);
+      --color-danger: var(--color-red-400);
+      --color-success: var(--color-green-400);
+
+      /* 文本对比色 */
+      --color-text-on-primary: #ffffff;
+      --color-text-on-danger: #ffffff;
+
+      /* 阴影 */
+      --shadow-default: var(--shadow-100);
+      --shadow-elevated: var(--shadow-200);
+    }
+
+    [data-theme="dark"] {
+      --color-background: var(--color-gray-900);
+      --color-surface: var(--color-gray-800);
+      --color-surface-elevated: var(--color-gray-700);
+      --color-text-primary: #ffffff;
+      --color-text-secondary: var(--color-gray-300);
+      --color-text-disabled: var(--color-gray-500);
+      --color-border: var(--color-gray-600);
+      --color-divider: var(--color-gray-700);
+
+      --color-primary: var(--color-blue-400);
+      --color-primary-hover: var(--color-blue-500);
+      --color-primary-active: var(--color-blue-300);
+      --color-danger: #ff5b64;
+      --color-success: #33ab84;
+
+      --color-text-on-primary: #000000;
+      --color-text-on-danger: #000000;
+
+      --shadow-default: 0 1px 3px rgba(0, 0, 0, 0.3);
+      --shadow-elevated: 0 3px 10px rgba(0, 0, 0, 0.4);
+    }
+
+    /* ======= 基础样式 ======= */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--color-background);
+      color: var(--color-text-primary);
+      font-family: var(--font-family-sans);
+      font-size: var(--font-size-300);
+      line-height: var(--line-height-200);
+      transition: background-color var(--transition-duration-200) var(--transition-easing-default);
+      padding: var(--spacing-400);
+      min-height: 100vh;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4 {
+      font-weight: var(--font-weight-bold);
+      line-height: var(--line-height-100);
+      margin-bottom: var(--spacing-300);
+    }
+
+    h1 {
+      font-size: var(--font-size-600);
+    }
+
+    h2 {
+      font-size: var(--font-size-500);
+    }
+
+    h3 {
+      font-size: var(--font-size-400);
+    }
+
+    p {
+      margin-bottom: var(--spacing-300);
+      color: var(--color-text-secondary);
+    }
+
+    /* ======= 组件系统 ======= */
+    /* 按钮组件 */
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--spacing-200) var(--spacing-400);
+      border-radius: var(--border-radius-200);
+      border: var(--border-width-100) solid transparent;
+      background-color: transparent;
+      font-family: inherit;
+      font-size: var(--font-size-200);
+      font-weight: var(--font-weight-medium);
+      line-height: var(--line-height-100);
+      cursor: pointer;
+      transition:
+        background-color var(--transition-duration-100) var(--transition-easing-default),
+        border-color var(--transition-duration-100) var(--transition-easing-default),
+        color var(--transition-duration-100) var(--transition-easing-default);
+      outline: none;
+    }
+
+    .button--primary {
+      background-color: var(--color-primary);
+      color: var(--color-text-on-primary);
+    }
+
+    .button--primary:hover {
+      background-color: var(--color-primary-hover);
+    }
+
+    .button--primary:active {
+      background-color: var(--color-primary-active);
+    }
+
+    .button--secondary {
+      border-color: var(--color-border);
+      color: var(--color-text-primary);
+    }
+
+    .button--secondary:hover {
+      background-color: var(--color-surface);
+    }
+
+    .button--danger {
+      background-color: var(--color-danger);
+      color: var(--color-text-on-danger);
+    }
+
+    .button--small {
+      padding: var(--spacing-100) var(--spacing-300);
+      font-size: var(--font-size-100);
+    }
+
+    /* 卡片组件 */
+    .card {
+      background-color: var(--color-surface-elevated);
+      border-radius: var(--border-radius-300);
+      box-shadow: var(--shadow-elevated);
+      padding: var(--spacing-400);
+      margin-bottom: var(--spacing-400);
+      transition: all var(--transition-duration-200) var(--transition-easing-default);
+    }
+
+    .card__header {
+      padding-bottom: var(--spacing-300);
+      margin-bottom: var(--spacing-300);
+      border-bottom: var(--border-width-100) solid var(--color-divider);
+    }
+
+    .card__title {
+      font-size: var(--font-size-400);
+      font-weight: var(--font-weight-bold);
+    }
+
+    /* 表单组件 */
+    .input-group {
+      margin-bottom: var(--spacing-300);
+    }
+
+    .label {
+      display: block;
+      margin-bottom: var(--spacing-100);
+      font-size: var(--font-size-200);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-secondary);
+    }
+
+    .input {
+      width: 100%;
+      padding: var(--spacing-200) var(--spacing-300);
+      border: var(--border-width-100) solid var(--color-border);
+      border-radius: var(--border-radius-200);
+      background-color: var(--color-surface);
+      color: var(--color-text-primary);
+      font-family: inherit;
+      font-size: var(--font-size-200);
+      transition:
+        border-color var(--transition-duration-100) var(--transition-easing-default),
+        box-shadow var(--transition-duration-100) var(--transition-easing-default);
+    }
+
+    .input:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 2px rgba(38, 128, 235, 0.2);
+      outline: none;
+    }
+
+    .select {
+      appearance: none;
+      background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23707070'%3E%3Cpath d='M4 6l4 4 4-4z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right var(--spacing-300) center;
+      background-size: 16px;
+      padding-right: var(--spacing-600);
+    }
+
+    /* ======= 实用工具类 ======= */
+    /* 布局工具 */
+    .flex {
+      display: flex;
+    }
+
+    .flex-column {
+      flex-direction: column;
+    }
+
+    .gap-200 {
+      gap: var(--spacing-200);
+    }
+
+    .gap-300 {
+      gap: var(--spacing-300);
+    }
+
+    .gap-400 {
+      gap: var(--spacing-400);
+    }
+
+    .align-center {
+      align-items: center;
+    }
+
+    .justify-between {
+      justify-content: space-between;
+    }
+
+    .w-100 {
+      width: 100%;
+    }
+
+    /* 间距工具 */
+    .mb-300 {
+      margin-bottom: var(--spacing-300) !important;
+    }
+
+    .mb-400 {
+      margin-bottom: var(--spacing-400) !important;
+    }
+
+    .mt-400 {
+      margin-top: var(--spacing-400) !important;
+    }
+
+    .mr-200 {
+      margin-right: var(--spacing-200) !important;
+    }
+
+    .p-400 {
+      padding: var(--spacing-400) !important;
+    }
+
+    /* 文本工具 */
+    .text-center {
+      text-align: center;
+    }
+
+    .text-secondary {
+      color: var(--color-text-secondary);
+    }
+
+    .text-disabled {
+      color: var(--color-text-disabled);
+    }
+
+    /* 响应式工具 */
+    @media (min-width: 768px) {
+      .md\:flex-row {
+        flex-direction: row;
+      }
+
+      .md\:w-50 {
+        width: 50%;
+      }
+    }
+
+    /* ======= 主题切换UI ======= */
+    .theme-switcher {
+      position: fixed;
+      top: var(--spacing-400);
+      right: var(--spacing-400);
+      background-color: var(--color-surface-elevated);
+      border-radius: var(--border-radius-300);
+      box-shadow: var(--shadow-elevated);
+      padding: var(--spacing-200);
+      z-index: 100;
+    }
+
+    .theme-switcher__label {
+      font-size: var(--font-size-100);
+      font-weight: var(--font-weight-medium);
+      margin-right: var(--spacing-200);
+    }
+
+    /* ======= 页面布局 ======= */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header {
+      margin-bottom: var(--spacing-500);
+      padding-bottom: var(--spacing-400);
+      border-bottom: var(--border-width-100) solid var(--color-divider);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--spacing-400);
+    }
+
+    @media (min-width: 768px) {
+      .grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- 主题切换器 -->
+  <div class="theme-switcher flex align-center">
+    <span class="theme-switcher__label">主题:</span>
+    <button class="button button--secondary button--small" data-theme="light">浅色</button>
+    <button class="button button--secondary button--small" data-theme="dark">深色</button>
+  </div>
+
+  <div class="container">
+    <!-- 页面头部 -->
+    <header class="header">
+      <h1>Spectrum CSS 架构实现</h1>
+      <p class="text-secondary">基于 Adobe Spectrum 设计系统的 CSS 架构，使用 CSS 变量实现主题切换</p>
+    </header>
+
+    <!-- 主要内容区域 -->
+    <main>
+      <div class="grid">
+        <!-- 卡片 1 -->
+        <div class="card">
+          <div class="card__header">
+            <h2 class="card__title">按钮组件</h2>
+          </div>
+          <div class="flex flex-column gap-200">
+            <button class="button button--primary">主要按钮</button>
+            <button class="button button--secondary">次要按钮</button>
+            <button class="button button--danger">危险操作</button>
+            <button class="button button--secondary button--small">小号按钮</button>
+          </div>
+        </div>
+
+        <!-- 卡片 2 -->
+        <div class="card">
+          <div class="card__header">
+            <h2 class="card__title">表单组件</h2>
+          </div>
+          <form>
+            <div class="input-group">
+              <label class="label" for="name">姓名</label>
+              <input type="text" id="name" class="input" placeholder="请输入姓名">
+            </div>
+
+            <div class="input-group">
+              <label class="label" for="email">电子邮箱</label>
+              <input type="email" id="email" class="input" placeholder="example@domain.com">
+            </div>
+
+            <div class="input-group">
+              <label class="label" for="country">国家</label>
+              <select id="country" class="input select">
+                <option value="">请选择国家</option>
+                <option value="us">美国</option>
+                <option value="cn">中国</option>
+                <option value="jp">日本</option>
+              </select>
+            </div>
+
+            <button type="submit" class="button button--primary w-100 mt-400">提交表单</button>
+          </form>
+        </div>
+
+        <!-- 卡片 3 -->
+        <div class="card">
+          <div class="card__header">
+            <h2 class="card__title">卡片标题</h2>
+          </div>
+          <p>这是一个使用 CSS 变量实现的卡片组件。当切换主题时，所有颜色和阴影都会自动适应。</p>
+          <p class="text-disabled mt-400">禁用状态文本示例</p>
+        </div>
+      </div>
+
+      <!-- 响应式示例 -->
+      <div class="card mt-400">
+        <div class="card__header">
+          <h2 class="card__title">响应式布局</h2>
+        </div>
+        <div class="flex flex-column gap-300 md:flex-row">
+          <div class="p-400"
+            style="background-color: var(--color-surface); border-radius: var(--border-radius-200); flex: 1;">
+            <h3>响应式项目 1</h3>
+            <p class="text-secondary">在移动设备上垂直排列，在平板和桌面上水平排列</p>
+          </div>
+          <div class="p-400"
+            style="background-color: var(--color-surface); border-radius: var(--border-radius-200); flex: 1;">
+            <h3>响应式项目 2</h3>
+            <p class="text-secondary">使用 CSS 变量定义断点，实现响应式设计</p>
+          </div>
+          <div class="p-400"
+            style="background-color: var(--color-surface); border-radius: var(--border-radius-200); flex: 1;">
+            <h3>响应式项目 3</h3>
+            <p class="text-secondary">布局和间距随屏幕尺寸变化</p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // 主题切换功能
+    document.querySelectorAll('[data-theme]').forEach(button => {
+      button.addEventListener('click', () => {
+        const theme = button.getAttribute('data-theme');
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+      });
+    });
+
+    // 初始化主题
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+
+    // 系统偏好检测
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+    prefersDark.addEventListener('change', e => {
+      if (!localStorage.getItem('theme')) {
+        document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+      }
+    });
+
+    // 初始检测
+    if (!localStorage.getItem('theme') && prefersDark.matches) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  </script>
+</body>
+
+</html>
